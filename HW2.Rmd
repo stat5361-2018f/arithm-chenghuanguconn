@@ -1,0 +1,103 @@
+---
+title: "HW2"
+author: "Cheng Huang 2658312"
+date: "9/10/2018"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+always_allow_html: yes
+---
+
+# Problem 2
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+require(DT)
+library(ggplot2)
+require(data.table)
+
+set.seed(123)
+nlist <- c(100, 1000, 10000)
+tlist <- c(0.0, 0.67, 0.84, 1.28, 1.65, 2.32, 2.58, 3.09, 3.72)
+repno <- 100
+
+## generate normal distribution data and calculate approx. CDF
+cdf.cal.fun <- function(n, tlist){
+  x <- rnorm(n, mean = 0, sd = 1)
+  cdf <- double(length(tlist))
+  for(t in tlist){
+    cdf[which(tlist == t)] <- sum(x <= t) /n
+}
+  cdf
+}
+tble <- data.frame(t.value = tlist, truevalue.cdf= pnorm(tlist, mean = 0, sd = 1))
+## result table
+for(n in nlist){
+  cdf <- cdf.cal.fun(n = n, tlist = tlist)
+  ## table
+  tble <- cbind(tble, cdf)
+}
+colnames(tble) <- c("t value", "true value of cdf", "n = 100", "n = 1000", "n = 10000")
+tble
+```
+
+## Abstract
+
+This Model is designed to evaluate the Monte Carlo method when approximate the distribution function of $N(0,1)$. The sample size are $n \in \{10^2, 10^3, 10^4\}$, and the CDF is evaluated at $t \in \{0.0,0.67,0.84,1.28,1.65,2.32,2.58,3.09,3.72\}$.\
+A table makes comparison between the true value and the approxiamte value of the CDF for all sample size.\
+The box plots demonstrate how the bias distribution change along different t.
+
+## Methodology
+
+The Monte Carlo methods is using:
+\[\hat{\Phi(t)} = \frac{1}{n} \sum_{i=1}^{n}I(X_i \le t)\]
+to estimate the distribution function of $N(0,1)$.\
+This calculation is achieved by define a function to calculate the empirical cdf value:\
+```{r funtion, echo = TRUE}
+cdf.cal.fun <- function(n, tlist){
+  x <- rnorm(n, mean = 0, sd = 1)
+  cdf <- double(length(tlist))
+  for(t in tlist){
+    cdf[which(tlist == t)] <- sum(x <= t) /n
+}
+  cdf
+}
+
+```
+## Result
+### Table
+The first result is to show the table comparison between the true value of CDF and the approximate one.\
+```{r table, echo = FALSE}
+
+data.table(tble)
+
+```
+### Bias graph
+The following box-plots gives the bias under different sample size n.\
+As expected, few numbers generated when t is large, so the distribution of the bias becomes less spread for large t.
+```{r graph, echo = FALSE}
+for(n in nlist){
+  cdf <- cdf.cal.fun(n = n, tlist = tlist)
+  ## table
+  cdf.rep <- replicate(100, cdf.cal.fun(n = n, tlist = tlist))
+  bias <- cdf.rep - pnorm(tlist, mean = 0, sd = 1)
+  # print(bias)
+  df <- data.frame(
+    t.value = factor(rep(tlist, each = 100)),
+    bias = as.vector(t(bias))
+      #c(bias[1, ], bias[2, ], bias[3, ]....) ## how to improve?
+  )
+  
+  p <- ggplot(df, aes(x=t.value, y=bias, fill = t.value)) +
+    geom_boxplot() + ggtitle(paste("n = ", n))
+  print(p)
+}
+
+```
+
+# Problem 3
+How `.Machine$double.xmax`, `.Machine$double.xmin`, `.Machine$double.eps`, and `.Machine@double.neg.eps` are defined using the 64-bit double precision floating point arithmetic?\
+`.Machine$double.xmax`the largest normalized floating-point number. Typically, it is equal to (1 - double.neg.eps) * double.base ^ double.max.exp, but on some machines it is only the second or third largest such number, being too small by 1 or 2 units in the last digit of the significand. Normally 1.797693e+308. Note that larger unnormalized numbers can occur.\
+`.Machine$double.xmin`the smallest non-zero normalized floating-point number, a power of the radix, i.e., double.base ^ double.min.exp. Normally 2.225074e-308.\
+`.Machine$double.eps`the smallest positive floating-point number x such that 1 + x != 1. It equals double.base ^ ulp.digits if either double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.ulp.digits) / 2. Normally 2.220446e-16.\
+`.Machine@double.neg.eps`a small positive floating-point number x such that 1 - x != 1. It equals double.base ^ double.neg.ulp.digits if double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.neg.ulp.digits) / 2. Normally 1.110223e-16. As double.neg.ulp.digits is bounded below by -(double.digits + 3), double.neg.eps may not be the smallest number that can alter 1 by subtraction.\
