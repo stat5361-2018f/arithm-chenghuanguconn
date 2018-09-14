@@ -1,15 +1,29 @@
 ---
 title: "HW2"
-author: "Cheng Huang 2658312"
-date: "9/10/2018"
+# subtitle: "possible subtitle goes here"
+author:
+  - Cheng Huang^[<email>; Ph.D. student at
+    Department of Statistics, University of Connecticut.]
+    
+date: "`r format(Sys.time(), '%d %B %Y')`"
+documentclass: article
+papersize: letter
+fontsize: 11pt
+bibliography: template.bib
+biblio-style: asa
+keywords: Monte Carlo, Simulation, .Machine
+# keywords set in YAML header here only go to the properties of the PDF output
+# the keywords that appear in PDF output are set in latex/before_body.tex
 output:
   pdf_document: default
   html_document:
     df_print: paged
 always_allow_html: yes
+abstract: |
+    This Model is designed to evaluate the Monte Carlo method when approximate the distribution function of $N(0,1)$. The sample size are $n \in \{10^2, 10^3, 10^4\}$, and the CDF is evaluated at $t \in \{0.0,0.67,0.84,1.28,1.65,2.32,2.58,3.09,3.72\}$. A table makes comparison between the true value and the approxiamte value of the CDF for all sample size. The box plots demonstrate how the bias distribution change along different t.
 ---
 
-# Problem 2
+# Problem 2 {#sec:P2}
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE) 
 require(DT)
@@ -30,7 +44,8 @@ cdf.cal.fun <- function(n, tlist){
 }
   cdf
 }
-tble <- data.frame(t.value = tlist, truevalue.cdf= pnorm(tlist, mean = 0, sd = 1))
+tble <- data.frame(t.value = tlist, 
+                   truevalue.cdf= pnorm(tlist, mean = 0, sd = 1))
 ## result table
 for(n in nlist){
   cdf <- cdf.cal.fun(n = n, tlist = tlist)
@@ -41,12 +56,6 @@ colnames(tble) <- c("t value", "true value of cdf", "n = 100", "n = 1000", "n = 
 tble
 ```
 
-## Abstract
-
-This Model is designed to evaluate the Monte Carlo method when approximate the distribution function of $N(0,1)$. The sample size are $n \in \{10^2, 10^3, 10^4\}$, and the CDF is evaluated at $t \in \{0.0,0.67,0.84,1.28,1.65,2.32,2.58,3.09,3.72\}$.\
-A table makes comparison between the true value and the approxiamte value of the CDF for all sample size.\
-The box plots demonstrate how the bias distribution change along different t.
-
 ## Methodology
 
 The Monte Carlo methods is using:
@@ -54,17 +63,18 @@ The Monte Carlo methods is using:
 to estimate the distribution function of $N(0,1)$.\
 This calculation is achieved by define a function to calculate the empirical cdf value:\
 ```{r funtion, echo = TRUE}
+tlist <- c(0.0, 0.67, 0.84, 1.28, 1.65, 2.32, 2.58, 3.09, 3.72)
 cdf.cal.fun <- function(n, tlist){
   x <- rnorm(n, mean = 0, sd = 1)
   cdf <- double(length(tlist))
   for(t in tlist){
     cdf[which(tlist == t)] <- sum(x <= t) /n
-}
+  }
   cdf
 }
 
 ```
-## Result
+## Result and Conclusions
 ### Table
 The first result is to show the table comparison between the true value of CDF and the approximate one.\
 ```{r table, echo = FALSE}
@@ -74,7 +84,7 @@ data.table(tble)
 ```
 ### Bias graph
 The following box-plots gives the bias under different sample size n.\
-As expected, few numbers generated when t is large, so the distribution of the bias becomes less spread for large t.
+As expected, few numbers generated when t is large, so the distribution of the bias becomes less spread for large t.\
 ```{r graph, echo = FALSE}
 for(n in nlist){
   cdf <- cdf.cal.fun(n = n, tlist = tlist)
@@ -95,9 +105,64 @@ for(n in nlist){
 
 ```
 
-# Problem 3
+# Problem 3 {#sec:P3}
+```{r Machine, include=FALSE}
+?.Machine
+
+
+```
 How `.Machine$double.xmax`, `.Machine$double.xmin`, `.Machine$double.eps`, and `.Machine@double.neg.eps` are defined using the 64-bit double precision floating point arithmetic?\
-`.Machine$double.xmax`the largest normalized floating-point number. Typically, it is equal to (1 - double.neg.eps) * double.base ^ double.max.exp, but on some machines it is only the second or third largest such number, being too small by 1 or 2 units in the last digit of the significand. Normally 1.797693e+308. Note that larger unnormalized numbers can occur.\
-`.Machine$double.xmin`the smallest non-zero normalized floating-point number, a power of the radix, i.e., double.base ^ double.min.exp. Normally 2.225074e-308.\
-`.Machine$double.eps`the smallest positive floating-point number x such that 1 + x != 1. It equals double.base ^ ulp.digits if either double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.ulp.digits) / 2. Normally 2.220446e-16.\
-`.Machine@double.neg.eps`a small positive floating-point number x such that 1 - x != 1. It equals double.base ^ double.neg.ulp.digits if double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.neg.ulp.digits) / 2. Normally 1.110223e-16. As double.neg.ulp.digits is bounded below by -(double.digits + 3), double.neg.eps may not be the smallest number that can alter 1 by subtraction.\
+The reprensentation of the 64-bit double-precision number is given by\
+
+\[ (-1) ^ {sign} (1 + \sum_{i=1}^{52}b_{52 - i}2 ^ {-i}) \times 2 ^ {e - 1023}\]
+
+* sign bit: 1 bit
+* Exponent: 11 bits
+* Significand : 53 bits.
+
+The exponent takes 11 bits, there are total $2 ^ {11} = 2048$ possible values represented, it is centored as e - 1023 is representing integer from -1024 to 1023.\
+
+
+`.Machine$double.xmax`\
+the largest normalized floating-point number. Typically, it is equal to (1 - double.neg.eps) * double.base ^ double.max.exp, but on some machines it is only the second or third largest such number, being too small by 1 or 2 units in the last digit of the significand. Normally 1.797693e+308. Note that larger unnormalized numbers can occur.\
+```{r doublexmax}
+.Machine$double.xmax
+
+(1 + sum(2 ^ -c(1:52))) * 2 ^ 1023
+```
+`.Machine$double.xmin`\
+the smallest non-zero normalized floating-point number, a power of the radix, i.e., double.base ^ double.min.exp. Normally 2.225074e-308.\
+```{r doublexmin}
+.Machine$double.xmin
+
+(1 - 2 ^ -53) * 2 ^ -1022 == .Machine$double.xmin
+
+(1 - .Machine$double.neg.eps) * .Machine$double.base ^ .Machine$double.min.exp == .Machine$double.xmin
+
+```
+`.Machine$double.eps`\
+the smallest positive floating-point number x such that 1 + x != 1. It equals double.base ^ ulp.digits if either double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.ulp.digits) / 2. Normally 2.220446e-16.\
+```{r doubleeps}
+.Machine$double.eps
+
+.Machine$double.base ^ .Machine$double.ulp.digits == .Machine$double.eps
+
+2 ^ -52 == .Machine$double.eps
+
+```
+`.Machine@double.neg.eps`\
+a small positive floating-point number x such that 1 - x != 1. It equals double.base ^ double.neg.ulp.digits if double.base is 2 or double.rounding is 0; otherwise, it is (double.base ^ double.neg.ulp.digits) / 2. Normally 1.110223e-16. As double.neg.ulp.digits is bounded below by -(double.digits + 3), double.neg.eps may not be the smallest number that can alter 1 by subtraction.\
+```{r doublenegeps}
+.Machine$double.neg.eps
+
+.Machine$double.base ^ .Machine$double.neg.ulp.digits == .Machine$double.neg.eps
+  
+2 ^ -53 == .Machine$double.neg.eps
+
+```
+# Reference {-}
+
+[Double-precision floating-point format]https://en.wikipedia.org/wiki/Double-precision_floating-point_format \
+[jun-yan/stat-5361]https://github.com/jun-yan/stat-5361 \
+[ggplot2 boxplot] \
+http://www.sthda.com/english/wiki/ggplot2-box-plot-quick-start-guide-r-software-and-data-visualization
